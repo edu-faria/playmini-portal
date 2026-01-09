@@ -15,6 +15,7 @@ const gameComponents = {
   snake: Snake,
   tetris: Tetris,
   memory: Memory,
+  minesweeper: Minesweeper,
 };
 
 function GamePage() {
