@@ -8,6 +8,7 @@ import Sudoku from '../games/Sudoku';
 import Snake from '../games/Snake';
 import Tetris from '../games/Tetris';
 import Memory from '../games/Memory';
+import Minesweeper from '../games/Minesweeper';
 
 const gameComponents = {
   sudoku: Sudoku,
