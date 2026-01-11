@@ -35,7 +35,7 @@ export const games = [
     path: '/memory'
   },
   {
-    id: 'game2048',
+    id: '2048',
     name: '2048',
     icon: '🔢',
     description: 'Merge tiles to reach 2048',
