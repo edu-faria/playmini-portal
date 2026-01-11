@@ -19,7 +19,6 @@ function Sudoku() {
     expert: 58
   };
 
-  // Generate a complete valid Sudoku solution
   const generateSolution = () => {
     const grid = Array(9).fill().map(() => Array(9).fill(0));
     fillGrid(grid);
@@ -196,91 +195,106 @@ function Sudoku() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-purple-600 to-purple-800">
-      <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-2xl w-full">
-        <h1 className="text-4xl font-bold text-center text-gray-800 mb-6">Sudoku</h1>
+    <div className="flex items-center justify-center h-full p-8">
+      <div className="w-full max-w-4xl">
+        <h2 className="text-3xl font-bold mb-6 text-center">Sudoku</h2>
         
         {/* Controls */}
-        <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-          <div className="flex gap-6">
-            <div className="font-bold text-blue-600">⏱️ {formatTime()}</div>
-            <div className="font-bold text-red-600">❌ {errors}/3</div>
-            <div className="font-bold text-yellow-600">💡 {hints}</div>
-          </div>
-          
-          <div className="flex gap-2 flex-wrap">
-            <select 
-              value={level}
-              onChange={(e) => setLevel(e.target.value)}
-              className="px-4 py-2 border-2 border-purple-600 rounded-lg font-bold text-purple-600 bg-white cursor-pointer"
-            >
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-              <option value="expert">Expert</option>
-            </select>
-            <button 
-              onClick={newGame}
-              className="px-6 py-2 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 transition"
-            >
-              New Game
-            </button>
-            <button 
-              onClick={useHint}
-              disabled={hints <= 0}
-              className="px-6 py-2 bg-yellow-500 text-white rounded-lg font-bold hover:bg-yellow-600 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              Hint
-            </button>
+        <div className="bg-gray-800 rounded-lg p-4 mb-6">
+          <div className="flex flex-wrap justify-between items-center gap-4">
+            <div className="flex gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400">⏱️</span>
+                <span className="font-mono text-blue-400">{formatTime()}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400">❌</span>
+                <span className="font-mono text-red-400">{errors}/3</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400">💡</span>
+                <span className="font-mono text-yellow-400">{hints}</span>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 flex-wrap">
+              <select 
+                value={level}
+                onChange={(e) => setLevel(e.target.value)}
+                className="px-4 py-2 bg-gray-700 text-gray-200 rounded border border-gray-600 hover:bg-gray-600 transition-colors cursor-pointer"
+              >
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+                <option value="expert">Expert</option>
+              </select>
+              <button 
+                onClick={newGame}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              >
+                New Game
+              </button>
+              <button 
+                onClick={useHint}
+                disabled={hints <= 0}
+                className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+              >
+                Hint
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Board */}
-        <div className="grid grid-cols-9 gap-0 w-fit mx-auto border-4 border-gray-800 mb-6">
-          {board.map((row, rowIdx) => 
-            row.map((cell, colIdx) => {
-              const idx = rowIdx * 9 + colIdx;
-              const isSelectedCell = selected && selected.row === rowIdx && selected.col === colIdx;
-              const isFixedCell = isFixed(rowIdx, colIdx);
-              const rightBorder = (colIdx + 1) % 3 === 0 && colIdx !== 8;
-              const bottomBorder = (rowIdx + 1) % 3 === 0 && rowIdx !== 8;
-              
-              return (
-                <div
-                  key={idx}
-                  onClick={() => selectCell(rowIdx, colIdx)}
-                  className={`
-                    w-12 h-12 flex items-center justify-center text-xl font-bold border border-gray-300 cursor-pointer
-                    ${isFixedCell ? 'bg-gray-100 cursor-default' : 'bg-white hover:bg-gray-50'}
-                    ${isSelectedCell ? 'bg-blue-200' : ''}
-                    ${rightBorder ? 'border-r-4 border-r-gray-800' : ''}
-                    ${bottomBorder ? 'border-b-4 border-b-gray-800' : ''}
-                  `}
-                >
-                  {cell !== 0 ? cell : ''}
-                </div>
-              );
-            })
-          )}
+        <div className="bg-gray-800 rounded-lg p-6 mb-6">
+          <div className="grid grid-cols-9 gap-0 w-fit mx-auto border-4 border-gray-600">
+            {board.map((row, rowIdx) => 
+              row.map((cell, colIdx) => {
+                const idx = rowIdx * 9 + colIdx;
+                const isSelectedCell = selected && selected.row === rowIdx && selected.col === colIdx;
+                const isFixedCell = isFixed(rowIdx, colIdx);
+                const rightBorder = (colIdx + 1) % 3 === 0 && colIdx !== 8;
+                const bottomBorder = (rowIdx + 1) % 3 === 0 && rowIdx !== 8;
+                
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => selectCell(rowIdx, colIdx)}
+                    className={`
+                      w-12 h-12 flex items-center justify-center text-xl font-bold border border-gray-700 cursor-pointer transition-colors
+                      ${isFixedCell ? 'bg-gray-700 text-gray-300 cursor-default' : 'bg-gray-900 text-white hover:bg-gray-800'}
+                      ${isSelectedCell ? 'bg-blue-900 ring-2 ring-blue-500' : ''}
+                      ${rightBorder ? 'border-r-4 border-r-gray-600' : ''}
+                      ${bottomBorder ? 'border-b-4 border-b-gray-600' : ''}
+                    `}
+                  >
+                    {cell !== 0 ? cell : ''}
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
 
         {/* Number Pad */}
-        <div className="grid grid-cols-9 gap-2 mb-6">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-            <button
-              key={num}
-              onClick={() => placeNumber(num)}
-              className="p-4 bg-gray-100 border-2 border-gray-300 rounded-lg text-xl font-bold hover:bg-blue-100 hover:border-purple-600 transition"
-            >
-              {num}
-            </button>
-          ))}
+        <div className="bg-gray-800 rounded-lg p-6 mb-6">
+          <div className="grid grid-cols-9 gap-2">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+              <button
+                key={num}
+                onClick={() => placeNumber(num)}
+                className="p-4 bg-gray-700 text-white rounded border border-gray-600 text-xl font-bold hover:bg-blue-600 hover:border-blue-500 transition-colors"
+              >
+                {num}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Game Over Message */}
         {gameOver !== null && (
           <div className={`text-center p-6 rounded-lg text-xl font-bold ${
-            gameOver ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            gameOver ? 'bg-green-900 text-green-200 border border-green-700' : 'bg-red-900 text-red-200 border border-red-700'
           }`}>
             {gameOver 
               ? `🎉 Congratulations! You won in ${formatTime()}!` 

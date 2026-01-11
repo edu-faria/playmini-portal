@@ -14,6 +14,13 @@ export const games = [
     path: '/snake'
   },
   {
+    id: 'last-war',
+    name: 'Last War',
+    icon: '⚔️',
+    description: 'Survive endless waves of enemies in this tactical shooter',
+    path: '/last-war'
+  },
+  {
     id: 'tetris',
     name: 'Tetris',
     icon: '🧱',
