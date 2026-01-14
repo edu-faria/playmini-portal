@@ -344,10 +344,10 @@ function Minesweeper() {
                       ${revealed[i][j]
                         ? cell === -1
                           ? 'bg-red-600 text-white'
-                          : 'bg-slate-600 text-white'
-                        : 'bg-gradient-to-br from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white shadow-md'
+                          : 'bg-purple-100 text-gray-900 border border-purple-200'
+                        : 'bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white shadow-lg shadow-purple-500/30'
                       }
-                      ${flagged[i][j] && !revealed[i][j] ? 'bg-gradient-to-br from-red-600 to-red-700' : ''}
+                      ${flagged[i][j] && !revealed[i][j] ? 'bg-gradient-to-br from-red-500 to-orange-600 shadow-lg shadow-red-500/40' : ''}
                       rounded-lg
                     `}
                     style={{ 
