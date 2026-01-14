@@ -47,5 +47,12 @@ export const games = [
     icon: '💣',
     description: 'Classic mine detection game',
     path: '/minesweeper'
+  },
+  {
+    id: 'rail-striker',
+    name: 'Rail Striker',
+    icon: '🚀',
+    description: 'Blast through waves. Collect power-ups. Survive!',
+    path: '/rail-striker'
   }
 ];
