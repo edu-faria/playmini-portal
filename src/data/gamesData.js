@@ -1,17 +1,10 @@
 export const games = [
-  {
-    id: 'sudoku',
-    name: 'Sudoku',
+    {
+    id: '2048',
+    name: '2048',
     icon: '🔢',
-    description: 'Classic number puzzle game',
-    path: '/sudoku'
-  },
-  {
-    id: 'snake',
-    name: 'Snake',
-    icon: '🐍',
-    description: 'Classic arcade game',
-    path: '/snake'
+    description: 'Merge tiles to reach 2048',
+    path: '/2048'
   },
   {
     id: 'last-war',
@@ -21,25 +14,11 @@ export const games = [
     path: '/last-war'
   },
   {
-    id: 'tetris',
-    name: 'Tetris',
-    icon: '🧱',
-    description: 'Block stacking puzzle',
-    path: '/tetris'
-  },
-  {
     id: 'memory',
     name: 'Memory Match',
     icon: '🎴',
     description: 'Test your memory skills',
     path: '/memory'
-  },
-  {
-    id: '2048',
-    name: '2048',
-    icon: '🔢',
-    description: 'Merge tiles to reach 2048',
-    path: '/2048'
   },
   {
     id: 'minesweeper',
@@ -49,10 +28,38 @@ export const games = [
     path: '/minesweeper'
   },
   {
+    id: 'pacman',
+    name: 'Pacman',
+    icon: '👻',
+    description: 'Classic Pacman arcade',
+    path: '/pacman'
+  },
+  {
     id: 'rail-striker',
     name: 'Rail Striker',
     icon: '🚀',
     description: 'Blast through waves. Collect power-ups. Survive!',
     path: '/rail-striker'
+  },
+  {
+    id: 'snake',
+    name: 'Snake',
+    icon: '🐍',
+    description: 'Classic arcade game',
+    path: '/snake'
+  },
+  {
+    id: 'sudoku',
+    name: 'Sudoku',
+    icon: '🔢',
+    description: 'Classic number puzzle game',
+    path: '/sudoku'
+  },
+  {
+    id: 'tetris',
+    name: 'Tetris',
+    icon: '🧱',
+    description: 'Block stacking puzzle',
+    path: '/tetris'
   }
 ];

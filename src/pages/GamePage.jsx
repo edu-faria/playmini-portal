@@ -4,23 +4,28 @@ import { games } from '../data/gamesData';
 import AdSpace from '../components/AdSpace';
 
 // Import your game components
-import Sudoku from '../games/Sudoku';
-import Snake from '../games/Snake';
-import LastWar from '../games/Last-war';
 import Game2048 from '../games/2048';
-import Tetris from '../games/Tetris';
+import LastWar from '../games/Last-war';
 import Memory from '../games/Memory';
 import Minesweeper from '../games/Minesweeper';
+import Pacman from '../games/Pacman';
+import RailStriker from '../games/Rail-striker';
+import Snake from '../games/Snake';
+import Sudoku from '../games/Sudoku';
+import Tetris from '../games/Tetris';
+
 
 // Map game IDs to components - use the EXACT id from gamesData.js
 const gameComponents = {
-  'sudoku': Sudoku,
-  'snake': Snake,
-  'last-war': LastWar,  // Changed from lastWar to 'last-war' to match the id
-  '2048': Game2048,     // Changed from game2048 to '2048' to match the id
-  'tetris': Tetris,
+  '2048': Game2048,
+  'last-war': LastWar,
   'memory': Memory,
   'minesweeper': Minesweeper,
+  'pacman': Pacman,
+  'rail-striker': RailStriker,
+  'snake': Snake,
+  'sudoku': Sudoku,
+  'tetris': Tetris
 };
 
 function GamePage() {
