@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Zap, Shield, Flame, Star, Trophy } from 'lucide-react';
 
-const RailsShooter = () => {
+const RailStriker = () => {
   const canvasRef = useRef(null);
   const [gameState, setGameState] = useState('menu');
   const [score, setScore] = useState(0);
@@ -559,8 +559,8 @@ const RailsShooter = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-purple-900 via-indigo-900 to-black p-4">
-      <div className="relative">
+    <div className="flex flex-col items-center justify-center w-full py-8">
+      <div className="relative" style={{ position: 'relative', zIndex: 10 }}>
         <canvas
           ref={canvasRef}
           width={360}
@@ -569,11 +569,14 @@ const RailsShooter = () => {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          style={{ touchAction: 'none' }}
+          style={{ touchAction: 'none', display: 'block', maxWidth: '100%' }}
         />
 
         {gameState === 'menu' && (
-          <div className="absolute inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center rounded-lg">
+          <div 
+            className="absolute inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center rounded-lg"
+            style={{ pointerEvents: 'all' }}
+          >
             <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 mb-4">
               ⚡ RAIL STRIKER
             </h1>
@@ -581,7 +584,8 @@ const RailsShooter = () => {
             <p className="text-gray-400 mb-8">Collect power-ups • Survive!</p>
             <button
               onClick={startGame}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-12 py-4 rounded-full text-2xl font-bold shadow-lg hover:scale-110 transition-transform"
+              className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-12 py-4 rounded-full text-2xl font-bold shadow-lg hover:scale-110 transition-transform cursor-pointer"
+              style={{ pointerEvents: 'all', zIndex: 100 }}
             >
               START GAME
             </button>
@@ -599,7 +603,7 @@ const RailsShooter = () => {
         )}
 
         {gameState === 'upgrade' && (
-          <div className="absolute inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center rounded-lg p-6">
+          <div className="absolute inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center rounded-lg p-6" style={{ pointerEvents: 'all' }}>
             <h2 className="text-3xl font-bold text-yellow-400 mb-6">BOSS DEFEATED!</h2>
             <div className="text-white mb-6">
               <p className="text-xl">Credits: {currency}</p>
@@ -607,7 +611,8 @@ const RailsShooter = () => {
             <div className="space-y-3 w-full mb-6">
               <button
                 onClick={() => upgradeSystem('damage')}
-                className="w-full bg-red-600 text-white py-3 rounded-lg font-bold flex items-center justify-between px-4 hover:bg-red-700"
+                className="w-full bg-red-600 text-white py-3 rounded-lg font-bold flex items-center justify-between px-4 hover:bg-red-700 cursor-pointer"
+                style={{ pointerEvents: 'all' }}
               >
                 <span className="flex items-center gap-2">
                   <Flame size={20} />
@@ -617,7 +622,8 @@ const RailsShooter = () => {
               </button>
               <button
                 onClick={() => upgradeSystem('health')}
-                className="w-full bg-green-600 text-white py-3 rounded-lg font-bold flex items-center justify-between px-4 hover:bg-green-700"
+                className="w-full bg-green-600 text-white py-3 rounded-lg font-bold flex items-center justify-between px-4 hover:bg-green-700 cursor-pointer"
+                style={{ pointerEvents: 'all' }}
               >
                 <span className="flex items-center gap-2">
                   <Shield size={20} />
@@ -627,7 +633,8 @@ const RailsShooter = () => {
               </button>
               <button
                 onClick={() => upgradeSystem('fireRate')}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold flex items-center justify-between px-4 hover:bg-blue-700"
+                className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold flex items-center justify-between px-4 hover:bg-blue-700 cursor-pointer"
+                style={{ pointerEvents: 'all' }}
               >
                 <span className="flex items-center gap-2">
                   <Zap size={20} />
@@ -638,7 +645,8 @@ const RailsShooter = () => {
             </div>
             <button
               onClick={continueGame}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-full text-xl font-bold hover:scale-105 transition-transform"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-full text-xl font-bold hover:scale-105 transition-transform cursor-pointer"
+              style={{ pointerEvents: 'all' }}
             >
               CONTINUE
             </button>
@@ -646,14 +654,15 @@ const RailsShooter = () => {
         )}
 
         {gameState === 'gameover' && (
-          <div className="absolute inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center rounded-lg">
+          <div className="absolute inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center rounded-lg" style={{ pointerEvents: 'all' }}>
             <h2 className="text-4xl font-bold text-red-500 mb-4">GAME OVER</h2>
             <p className="text-white text-2xl mb-2">Score: {score}</p>
             <p className="text-yellow-400 text-xl mb-2">Wave: {wave}</p>
             <p className="text-cyan-400 text-lg mb-8">Credits Earned: {currency}</p>
             <button
               onClick={startGame}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-10 py-4 rounded-full text-xl font-bold hover:scale-110 transition-transform"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-10 py-4 rounded-full text-xl font-bold hover:scale-110 transition-transform cursor-pointer"
+              style={{ pointerEvents: 'all' }}
             >
               PLAY AGAIN
             </button>
@@ -668,4 +677,4 @@ const RailsShooter = () => {
   );
 };
 
-export default RailsShooter;
+export default RailStriker;
