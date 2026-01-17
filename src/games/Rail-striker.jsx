@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Zap, Shield, Flame, Target, Star, Trophy } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Zap, Shield, Flame, Star, Trophy } from 'lucide-react';
 
 const RailsShooter = () => {
   const canvasRef = useRef(null);
-  const gameLoopRef = useRef(null);
-  const [gameState, setGameState] = useState('menu'); // menu, playing, gameover, upgrade
+  const [gameState, setGameState] = useState('menu');
   const [score, setScore] = useState(0);
   const [currency, setCurrency] = useState(0);
   const [wave, setWave] = useState(1);
@@ -36,9 +35,10 @@ const RailsShooter = () => {
     upgrades: {
       damage: 1,
       health: 1,
-      fireRate: 1,
-      shield: 0
-    }
+      fireRate: 1
+    },
+    score: 0,
+    wave: 1
   });
 
   const COLORS = {
@@ -66,477 +66,429 @@ const RailsShooter = () => {
     { type: 'shield', icon: '◉', color: '#00ddff', duration: 5000 }
   ];
 
-  const spawnEnemy = useCallback(() => {
-    const game = gameRef.current;
-    const waveLevel = Math.floor(wave / 5) + 1;
-    const isBossWave = wave % 10 === 0;
-    
-    let enemyType;
-    if (isBossWave) {
-      enemyType = ENEMY_TYPES[3];
-    } else {
-      const typeIndex = Math.min(Math.floor(wave / 3), ENEMY_TYPES.length - 2);
-      enemyType = ENEMY_TYPES[Math.floor(Math.random() * (typeIndex + 1))];
-    }
+  useEffect(() => {
+    if (gameState !== 'playing') return;
 
-    const enemy = {
-      x: Math.random() * 320 + 20,
-      y: -enemyType.size,
-      width: enemyType.size,
-      height: enemyType.size,
-      health: enemyType.health * waveLevel,
-      maxHealth: enemyType.health * waveLevel,
-      speed: enemyType.speed,
-      color: enemyType.color,
-      points: enemyType.points,
-      isBoss: enemyType.isBoss || false,
-      shootTimer: 0,
-      shootRate: 2000
+    let animationId;
+    const game = gameRef.current;
+
+    const spawnEnemy = () => {
+      const waveLevel = Math.floor(game.wave / 5) + 1;
+      const isBossWave = game.wave % 10 === 0;
+      
+      let enemyType;
+      if (isBossWave) {
+        enemyType = ENEMY_TYPES[3];
+      } else {
+        const typeIndex = Math.min(Math.floor(game.wave / 3), ENEMY_TYPES.length - 2);
+        enemyType = ENEMY_TYPES[Math.floor(Math.random() * (typeIndex + 1))];
+      }
+
+      const enemy = {
+        x: Math.random() * 320 + 20,
+        y: -enemyType.size,
+        width: enemyType.size,
+        height: enemyType.size,
+        health: enemyType.health * waveLevel,
+        maxHealth: enemyType.health * waveLevel,
+        speed: enemyType.speed,
+        color: enemyType.color,
+        points: enemyType.points,
+        isBoss: enemyType.isBoss || false,
+        shootTimer: 0,
+        shootRate: 2000
+      };
+
+      game.enemies.push(enemy);
     };
 
-    game.enemies.push(enemy);
-  }, [wave]);
-
-  const spawnPowerup = useCallback((x, y) => {
-    if (Math.random() < 0.3) {
-      const powerupType = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
-      gameRef.current.powerups.push({
-        x,
-        y,
-        width: 25,
-        height: 25,
-        type: powerupType.type,
-        icon: powerupType.icon,
-        color: powerupType.color,
-        duration: powerupType.duration,
-        vy: 2
-      });
-    }
-  }, []);
-
-  const createParticles = useCallback((x, y, color, count = 8) => {
-    const game = gameRef.current;
-    for (let i = 0; i < count; i++) {
-      const angle = (Math.PI * 2 * i) / count;
-      game.particles.push({
-        x,
-        y,
-        vx: Math.cos(angle) * (2 + Math.random() * 2),
-        vy: Math.sin(angle) * (2 + Math.random() * 2),
-        size: 3 + Math.random() * 3,
-        color,
-        life: 1
-      });
-    }
-  }, []);
-
-  const applyPowerup = useCallback((powerup) => {
-    const game = gameRef.current;
-    const existingWeapon = game.player.weapons.find(w => w.type === powerup.type);
-    
-    if (existingWeapon) {
-      existingWeapon.endTime = Date.now() + powerup.duration;
-    } else {
-      game.player.weapons.push({
-        type: powerup.type,
-        endTime: Date.now() + powerup.duration
-      });
-    }
-
-    if (powerup.type === 'shield') {
-      game.player.shield = true;
-      game.player.shieldTime = Date.now() + powerup.duration;
-    }
-  }, []);
-
-  const shootBullet = useCallback(() => {
-    const game = gameRef.current;
-    const now = Date.now();
-    const fireRate = game.player.fireRate / game.upgrades.fireRate;
-    
-    if (now - game.player.lastShot < fireRate) return;
-
-    const hasSpread = game.player.weapons.some(w => w.type === 'spread');
-    const hasLaser = game.player.weapons.some(w => w.type === 'laser');
-    const hasRocket = game.player.weapons.some(w => w.type === 'rocket');
-
-    if (hasLaser) {
-      game.bullets.push({
-        x: game.player.x,
-        y: game.player.y - 20,
-        width: 8,
-        height: 100,
-        vy: -15,
-        damage: game.player.damage * 2,
-        color: '#ff00ff',
-        type: 'laser'
-      });
-    } else if (hasRocket) {
-      game.bullets.push({
-        x: game.player.x,
-        y: game.player.y - 20,
-        width: 12,
-        height: 20,
-        vy: -8,
-        damage: game.player.damage * 3,
-        color: '#ff6600',
-        type: 'rocket'
-      });
-    } else {
-      game.bullets.push({
-        x: game.player.x,
-        y: game.player.y - 20,
-        width: 5,
-        height: 15,
-        vy: -10,
-        damage: game.player.damage,
-        color: COLORS.bullet,
-        type: 'normal'
-      });
-
-      if (hasSpread) {
-        game.bullets.push({
-          x: game.player.x - 15,
-          y: game.player.y - 20,
-          width: 5,
-          height: 15,
-          vy: -10,
-          vx: -2,
-          damage: game.player.damage,
-          color: '#00ffff',
-          type: 'spread'
-        });
-        game.bullets.push({
-          x: game.player.x + 15,
-          y: game.player.y - 20,
-          width: 5,
-          height: 15,
-          vy: -10,
-          vx: 2,
-          damage: game.player.damage,
-          color: '#00ffff',
-          type: 'spread'
+    const spawnPowerup = (x, y) => {
+      if (Math.random() < 0.3) {
+        const powerupType = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+        game.powerups.push({
+          x, y,
+          width: 25,
+          height: 25,
+          type: powerupType.type,
+          icon: powerupType.icon,
+          color: powerupType.color,
+          duration: powerupType.duration,
+          vy: 2
         });
       }
-    }
+    };
 
-    game.player.lastShot = now;
-  }, []);
+    const createParticles = (x, y, color, count = 8) => {
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 * i) / count;
+        game.particles.push({
+          x, y,
+          vx: Math.cos(angle) * (2 + Math.random() * 2),
+          vy: Math.sin(angle) * (2 + Math.random() * 2),
+          size: 3 + Math.random() * 3,
+          color,
+          life: 1
+        });
+      }
+    };
 
-  const checkCollision = useCallback((rect1, rect2) => {
-    return rect1.x < rect2.x + rect2.width &&
-           rect1.x + rect1.width > rect2.x &&
-           rect1.y < rect2.y + rect2.height &&
-           rect1.y + rect1.height > rect2.y;
-  }, []);
-
-  const updateGame = useCallback(() => {
-    const game = gameRef.current;
-    const now = Date.now();
-
-    // Remove expired weapons
-    game.player.weapons = game.player.weapons.filter(w => w.endTime > now);
-    if (game.player.shield && game.player.shieldTime < now) {
-      game.player.shield = false;
-    }
-
-    // Scroll background
-    game.scrollOffset += 2;
-
-    // Shoot bullets
-    shootBullet();
-
-    // Update bullets
-    game.bullets = game.bullets.filter(bullet => {
-      bullet.y += bullet.vy;
-      if (bullet.vx) bullet.x += bullet.vx;
-      return bullet.y > -50 && bullet.y < 700 && bullet.x > -20 && bullet.x < 380;
-    });
-
-    // Spawn enemies
-    game.enemySpawnTimer += 16;
-    if (game.enemySpawnTimer > game.enemySpawnRate) {
-      spawnEnemy();
-      game.enemySpawnTimer = 0;
-      game.enemySpawnRate = Math.max(500, 1500 - wave * 30);
-    }
-
-    // Update enemies
-    game.enemies = game.enemies.filter(enemy => {
-      enemy.y += enemy.speed;
+    const applyPowerup = (powerup) => {
+      const existingWeapon = game.player.weapons.find(w => w.type === powerup.type);
       
-      // Enemy shooting
-      enemy.shootTimer += 16;
-      if (enemy.shootTimer > enemy.shootRate && enemy.y > 50 && enemy.y < 400) {
-        game.bullets.push({
-          x: enemy.x,
-          y: enemy.y + enemy.height,
-          width: 6,
-          height: 12,
-          vy: 5,
-          damage: 10,
-          color: COLORS.enemyBullet,
-          isEnemy: true
-        });
-        enemy.shootTimer = 0;
-      }
-
-      // Check bullet collisions
-      game.bullets.forEach((bullet, bIndex) => {
-        if (!bullet.isEnemy && checkCollision(bullet, enemy)) {
-          enemy.health -= bullet.damage * game.upgrades.damage;
-          createParticles(bullet.x, bullet.y, enemy.color, 5);
-          game.bullets.splice(bIndex, 1);
-
-          if (enemy.health <= 0) {
-            setScore(s => s + enemy.points);
-            setCurrency(c => c + Math.floor(enemy.points / 2));
-            createParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.color, 15);
-            spawnPowerup(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
-            
-            if (enemy.isBoss) {
-              setWave(w => w + 1);
-              setGameState('upgrade');
-            }
-            return false;
-          }
-        }
-        return true;
-      });
-
-      // Check if enemy reached player
-      if (enemy.y > 600) {
-        game.player.health -= 20;
-        return false;
-      }
-
-      return enemy.health > 0;
-    });
-
-    // Update powerups
-    game.powerups = game.powerups.filter(powerup => {
-      powerup.y += powerup.vy;
-
-      if (checkCollision(powerup, game.player)) {
-        applyPowerup(powerup);
-        createParticles(powerup.x, powerup.y, powerup.color, 10);
-        return false;
-      }
-
-      return powerup.y < 700;
-    });
-
-    // Update particles
-    game.particles = game.particles.filter(particle => {
-      particle.x += particle.vx;
-      particle.y += particle.vy;
-      particle.life -= 0.02;
-      particle.vy += 0.1;
-      return particle.life > 0;
-    });
-
-    // Check enemy bullet collision with player
-    game.bullets.forEach((bullet, bIndex) => {
-      if (bullet.isEnemy && checkCollision(bullet, game.player)) {
-        if (!game.player.shield) {
-          game.player.health -= bullet.damage;
-          createParticles(bullet.x, bullet.y, COLORS.player, 8);
-        }
-        game.bullets.splice(bIndex, 1);
-      }
-    });
-
-    // Check game over
-    if (game.player.health <= 0) {
-      setGameState('gameover');
-      if (score > highScore) {
-        setHighScore(score);
-      }
-    }
-  }, [shootBullet, spawnEnemy, spawnPowerup, createParticles, applyPowerup, checkCollision, score, highScore, wave]);
-
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    const game = gameRef.current;
-
-    // Clear canvas
-    ctx.fillStyle = '#0a0a1a';
-    ctx.fillRect(0, 0, 360, 640);
-
-    // Draw scrolling background grid
-    ctx.strokeStyle = '#1a1a3a';
-    ctx.lineWidth = 1;
-    const gridSize = 40;
-    const offset = game.scrollOffset % gridSize;
-    
-    for (let y = -gridSize + offset; y < 640; y += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(360, y);
-      ctx.stroke();
-    }
-
-    // Draw player
-    ctx.save();
-    ctx.translate(game.player.x, game.player.y);
-    
-    // Shield
-    if (game.player.shield) {
-      ctx.strokeStyle = COLORS.shield;
-      ctx.lineWidth = 3;
-      ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 100) * 0.3;
-      ctx.beginPath();
-      ctx.arc(0, 0, 30, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-
-    // Player ship
-    ctx.fillStyle = COLORS.player;
-    ctx.beginPath();
-    ctx.moveTo(0, -20);
-    ctx.lineTo(-15, 20);
-    ctx.lineTo(15, 20);
-    ctx.closePath();
-    ctx.fill();
-
-    // Weapon indicators
-    const hasLaser = game.player.weapons.some(w => w.type === 'laser');
-    const hasRocket = game.player.weapons.some(w => w.type === 'rocket');
-    if (hasLaser) {
-      ctx.fillStyle = '#ff00ff';
-      ctx.fillRect(-3, -25, 6, 8);
-    }
-    if (hasRocket) {
-      ctx.fillStyle = '#ff6600';
-      ctx.fillRect(-8, 10, 4, 8);
-      ctx.fillRect(4, 10, 4, 8);
-    }
-
-    ctx.restore();
-
-    // Draw bullets
-    game.bullets.forEach(bullet => {
-      ctx.fillStyle = bullet.color;
-      if (bullet.type === 'laser') {
-        ctx.globalAlpha = 0.7;
-        ctx.fillRect(bullet.x - bullet.width / 2, bullet.y, bullet.width, bullet.height);
-        ctx.globalAlpha = 1;
-      } else if (bullet.type === 'rocket') {
-        ctx.save();
-        ctx.translate(bullet.x, bullet.y);
-        ctx.fillRect(-6, 0, 12, 20);
-        ctx.fillStyle = '#ffaa00';
-        ctx.beginPath();
-        ctx.moveTo(-4, 20);
-        ctx.lineTo(0, 28);
-        ctx.lineTo(4, 20);
-        ctx.fill();
-        ctx.restore();
+      if (existingWeapon) {
+        existingWeapon.endTime = Date.now() + powerup.duration;
       } else {
-        ctx.fillRect(bullet.x - bullet.width / 2, bullet.y, bullet.width, bullet.height);
+        game.player.weapons.push({
+          type: powerup.type,
+          endTime: Date.now() + powerup.duration
+        });
       }
-    });
 
-    // Draw enemies
-    game.enemies.forEach(enemy => {
-      ctx.fillStyle = enemy.color;
-      ctx.fillRect(enemy.x - enemy.width / 2, enemy.y, enemy.width, enemy.height);
+      if (powerup.type === 'shield') {
+        game.player.shield = true;
+        game.player.shieldTime = Date.now() + powerup.duration;
+      }
+    };
+
+    const shootBullet = () => {
+      const now = Date.now();
+      const fireRate = game.player.fireRate / game.upgrades.fireRate;
       
-      // Health bar
-      const healthPercent = enemy.health / enemy.maxHealth;
-      ctx.fillStyle = '#333';
-      ctx.fillRect(enemy.x - enemy.width / 2, enemy.y - 10, enemy.width, 4);
-      ctx.fillStyle = healthPercent > 0.5 ? '#00ff00' : healthPercent > 0.25 ? '#ffaa00' : '#ff0000';
-      ctx.fillRect(enemy.x - enemy.width / 2, enemy.y - 10, enemy.width * healthPercent, 4);
+      if (now - game.player.lastShot < fireRate) return;
 
-      // Boss indicator
-      if (enemy.isBoss) {
-        ctx.strokeStyle = '#ffff00';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(enemy.x - enemy.width / 2 - 5, enemy.y - 5, enemy.width + 10, enemy.height + 10);
+      const hasSpread = game.player.weapons.some(w => w.type === 'spread');
+      const hasLaser = game.player.weapons.some(w => w.type === 'laser');
+      const hasRocket = game.player.weapons.some(w => w.type === 'rocket');
+
+      if (hasLaser) {
+        game.bullets.push({
+          x: game.player.x, y: game.player.y - 20,
+          width: 8, height: 100, vy: -15,
+          damage: game.player.damage * 2,
+          color: '#ff00ff', type: 'laser'
+        });
+      } else if (hasRocket) {
+        game.bullets.push({
+          x: game.player.x, y: game.player.y - 20,
+          width: 12, height: 20, vy: -8,
+          damage: game.player.damage * 3,
+          color: '#ff6600', type: 'rocket'
+        });
+      } else {
+        game.bullets.push({
+          x: game.player.x, y: game.player.y - 20,
+          width: 5, height: 15, vy: -10,
+          damage: game.player.damage,
+          color: COLORS.bullet, type: 'normal'
+        });
+
+        if (hasSpread) {
+          game.bullets.push({
+            x: game.player.x - 15, y: game.player.y - 20,
+            width: 5, height: 15, vy: -10, vx: -2,
+            damage: game.player.damage, color: '#00ffff', type: 'spread'
+          });
+          game.bullets.push({
+            x: game.player.x + 15, y: game.player.y - 20,
+            width: 5, height: 15, vy: -10, vx: 2,
+            damage: game.player.damage, color: '#00ffff', type: 'spread'
+          });
+        }
       }
-    });
 
-    // Draw powerups
-    game.powerups.forEach(powerup => {
-      ctx.fillStyle = powerup.color;
-      ctx.globalAlpha = 0.8 + Math.sin(Date.now() / 100) * 0.2;
-      ctx.beginPath();
-      ctx.arc(powerup.x, powerup.y, 12, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 16px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(powerup.icon, powerup.x, powerup.y);
-    });
+      game.player.lastShot = now;
+    };
 
-    // Draw particles
-    game.particles.forEach(particle => {
-      ctx.fillStyle = particle.color;
-      ctx.globalAlpha = particle.life;
-      ctx.beginPath();
-      ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    });
+    const checkCollision = (rect1, rect2) => {
+      return rect1.x < rect2.x + rect2.width &&
+             rect1.x + rect1.width > rect2.x &&
+             rect1.y < rect2.y + rect2.height &&
+             rect1.y + rect1.height > rect2.y;
+    };
 
-    // Draw UI
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 20px Arial';
-    ctx.textAlign = 'left';
-    ctx.fillText(`Score: ${score}`, 10, 30);
-    ctx.fillText(`Wave: ${wave}`, 10, 55);
-    
-    // Health bar
-    ctx.fillStyle = '#333';
-    ctx.fillRect(10, 600, 340, 20);
-    const healthPercent = game.player.health / game.player.maxHealth;
-    ctx.fillStyle = healthPercent > 0.5 ? '#00ff00' : healthPercent > 0.25 ? '#ffaa00' : '#ff0000';
-    ctx.fillRect(10, 600, 340 * healthPercent, 20);
-    ctx.strokeStyle = '#fff';
-    ctx.strokeRect(10, 600, 340, 20);
+    const updateGame = () => {
+      const now = Date.now();
 
-    // Active weapons
-    let weaponY = 80;
-    game.player.weapons.forEach(weapon => {
-      const timeLeft = weapon.endTime - Date.now();
-      if (timeLeft > 0) {
-        const powerup = POWERUP_TYPES.find(p => p.type === weapon.type);
-        ctx.fillStyle = powerup.color;
-        ctx.globalAlpha = 0.7;
-        ctx.fillRect(10, weaponY, (timeLeft / powerup.duration) * 100, 8);
+      game.player.weapons = game.player.weapons.filter(w => w.endTime > now);
+      if (game.player.shield && game.player.shieldTime < now) {
+        game.player.shield = false;
+      }
+
+      game.scrollOffset += 2;
+      shootBullet();
+
+      game.bullets = game.bullets.filter(bullet => {
+        bullet.y += bullet.vy;
+        if (bullet.vx) bullet.x += bullet.vx;
+        return bullet.y > -50 && bullet.y < 700 && bullet.x > -20 && bullet.x < 380;
+      });
+
+      game.enemySpawnTimer += 16;
+      if (game.enemySpawnTimer > game.enemySpawnRate) {
+        spawnEnemy();
+        game.enemySpawnTimer = 0;
+        game.enemySpawnRate = Math.max(500, 1500 - game.wave * 30);
+      }
+
+      game.enemies = game.enemies.filter(enemy => {
+        enemy.y += enemy.speed;
+        
+        enemy.shootTimer += 16;
+        if (enemy.shootTimer > enemy.shootRate && enemy.y > 50 && enemy.y < 400) {
+          game.bullets.push({
+            x: enemy.x, y: enemy.y + enemy.height,
+            width: 6, height: 12, vy: 5, damage: 10,
+            color: COLORS.enemyBullet, isEnemy: true
+          });
+          enemy.shootTimer = 0;
+        }
+
+        let alive = true;
+        game.bullets.forEach((bullet, bIndex) => {
+          if (!bullet.isEnemy && checkCollision(bullet, enemy)) {
+            enemy.health -= bullet.damage * game.upgrades.damage;
+            createParticles(bullet.x, bullet.y, enemy.color, 5);
+            game.bullets.splice(bIndex, 1);
+
+            if (enemy.health <= 0) {
+              game.score += enemy.points;
+              setScore(game.score);
+              setCurrency(c => c + Math.floor(enemy.points / 2));
+              createParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.color, 15);
+              spawnPowerup(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+              
+              if (enemy.isBoss) {
+                game.wave++;
+                setWave(game.wave);
+                setGameState('upgrade');
+              }
+              alive = false;
+            }
+          }
+        });
+
+        if (enemy.y > 600) {
+          game.player.health -= 20;
+          return false;
+        }
+
+        return alive;
+      });
+
+      game.powerups = game.powerups.filter(powerup => {
+        powerup.y += powerup.vy;
+        if (checkCollision(powerup, game.player)) {
+          applyPowerup(powerup);
+          createParticles(powerup.x, powerup.y, powerup.color, 10);
+          return false;
+        }
+        return powerup.y < 700;
+      });
+
+      game.particles = game.particles.filter(particle => {
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        particle.life -= 0.02;
+        particle.vy += 0.1;
+        return particle.life > 0;
+      });
+
+      game.bullets.forEach((bullet, bIndex) => {
+        if (bullet.isEnemy && checkCollision(bullet, game.player)) {
+          if (!game.player.shield) {
+            game.player.health -= bullet.damage;
+            createParticles(bullet.x, bullet.y, COLORS.player, 8);
+          }
+          game.bullets.splice(bIndex, 1);
+        }
+      });
+
+      if (game.player.health <= 0) {
+        setGameState('gameover');
+        if (game.score > highScore) {
+          setHighScore(game.score);
+        }
+      }
+    };
+
+    const draw = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#0a0a1a';
+      ctx.fillRect(0, 0, 360, 640);
+
+      ctx.strokeStyle = '#1a1a3a';
+      ctx.lineWidth = 1;
+      const gridSize = 40;
+      const offset = game.scrollOffset % gridSize;
+      
+      for (let y = -gridSize + offset; y < 640; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(360, y);
+        ctx.stroke();
+      }
+
+      ctx.save();
+      ctx.translate(game.player.x, game.player.y);
+      
+      if (game.player.shield) {
+        ctx.strokeStyle = COLORS.shield;
+        ctx.lineWidth = 3;
+        ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 100) * 0.3;
+        ctx.beginPath();
+        ctx.arc(0, 0, 30, 0, Math.PI * 2);
+        ctx.stroke();
         ctx.globalAlpha = 1;
-        ctx.font = 'bold 12px Arial';
-        ctx.fillText(powerup.icon, 115, weaponY + 6);
-        weaponY += 12;
       }
-    });
-  }, [score, wave]);
 
-  useEffect(() => {
-    if (gameState === 'playing') {
-      gameLoopRef.current = setInterval(() => {
-        updateGame();
-        draw();
-      }, 16);
-    } else {
-      if (gameLoopRef.current) {
-        clearInterval(gameLoopRef.current);
+      ctx.fillStyle = COLORS.player;
+      ctx.beginPath();
+      ctx.moveTo(0, -20);
+      ctx.lineTo(-15, 20);
+      ctx.lineTo(15, 20);
+      ctx.closePath();
+      ctx.fill();
+
+      const hasLaser = game.player.weapons.some(w => w.type === 'laser');
+      const hasRocket = game.player.weapons.some(w => w.type === 'rocket');
+      if (hasLaser) {
+        ctx.fillStyle = '#ff00ff';
+        ctx.fillRect(-3, -25, 6, 8);
       }
-    }
+      if (hasRocket) {
+        ctx.fillStyle = '#ff6600';
+        ctx.fillRect(-8, 10, 4, 8);
+        ctx.fillRect(4, 10, 4, 8);
+      }
+
+      ctx.restore();
+
+      game.bullets.forEach(bullet => {
+        ctx.fillStyle = bullet.color;
+        if (bullet.type === 'laser') {
+          ctx.globalAlpha = 0.7;
+          ctx.fillRect(bullet.x - bullet.width / 2, bullet.y, bullet.width, bullet.height);
+          ctx.globalAlpha = 1;
+        } else if (bullet.type === 'rocket') {
+          ctx.save();
+          ctx.translate(bullet.x, bullet.y);
+          ctx.fillRect(-6, 0, 12, 20);
+          ctx.fillStyle = '#ffaa00';
+          ctx.beginPath();
+          ctx.moveTo(-4, 20);
+          ctx.lineTo(0, 28);
+          ctx.lineTo(4, 20);
+          ctx.fill();
+          ctx.restore();
+        } else {
+          ctx.fillRect(bullet.x - bullet.width / 2, bullet.y, bullet.width, bullet.height);
+        }
+      });
+
+      game.enemies.forEach(enemy => {
+        ctx.fillStyle = enemy.color;
+        ctx.fillRect(enemy.x - enemy.width / 2, enemy.y, enemy.width, enemy.height);
+        
+        const healthPercent = enemy.health / enemy.maxHealth;
+        ctx.fillStyle = '#333';
+        ctx.fillRect(enemy.x - enemy.width / 2, enemy.y - 10, enemy.width, 4);
+        ctx.fillStyle = healthPercent > 0.5 ? '#00ff00' : healthPercent > 0.25 ? '#ffaa00' : '#ff0000';
+        ctx.fillRect(enemy.x - enemy.width / 2, enemy.y - 10, enemy.width * healthPercent, 4);
+
+        if (enemy.isBoss) {
+          ctx.strokeStyle = '#ffff00';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(enemy.x - enemy.width / 2 - 5, enemy.y - 5, enemy.width + 10, enemy.height + 10);
+        }
+      });
+
+      game.powerups.forEach(powerup => {
+        ctx.fillStyle = powerup.color;
+        ctx.globalAlpha = 0.8 + Math.sin(Date.now() / 100) * 0.2;
+        ctx.beginPath();
+        ctx.arc(powerup.x, powerup.y, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(powerup.icon, powerup.x, powerup.y);
+      });
+
+      game.particles.forEach(particle => {
+        ctx.fillStyle = particle.color;
+        ctx.globalAlpha = particle.life;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      });
+
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 20px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Score: ${game.score}`, 10, 30);
+      ctx.fillText(`Wave: ${game.wave}`, 10, 55);
+      
+      ctx.fillStyle = '#333';
+      ctx.fillRect(10, 600, 340, 20);
+      const healthPercent = game.player.health / game.player.maxHealth;
+      ctx.fillStyle = healthPercent > 0.5 ? '#00ff00' : healthPercent > 0.25 ? '#ffaa00' : '#ff0000';
+      ctx.fillRect(10, 600, 340 * healthPercent, 20);
+      ctx.strokeStyle = '#fff';
+      ctx.strokeRect(10, 600, 340, 20);
+
+      let weaponY = 80;
+      game.player.weapons.forEach(weapon => {
+        const timeLeft = weapon.endTime - Date.now();
+        if (timeLeft > 0) {
+          const powerup = POWERUP_TYPES.find(p => p.type === weapon.type);
+          ctx.fillStyle = powerup.color;
+          ctx.globalAlpha = 0.7;
+          ctx.fillRect(10, weaponY, (timeLeft / powerup.duration) * 100, 8);
+          ctx.globalAlpha = 1;
+          ctx.font = 'bold 12px Arial';
+          ctx.fillText(powerup.icon, 115, weaponY + 6);
+          weaponY += 12;
+        }
+      });
+    };
+
+    const gameLoop = () => {
+      updateGame();
+      draw();
+      animationId = requestAnimationFrame(gameLoop);
+    };
+
+    gameLoop();
 
     return () => {
-      if (gameLoopRef.current) {
-        clearInterval(gameLoopRef.current);
+      if (animationId) cancelAnimationFrame(animationId);
+    };
+  }, [gameState, highScore]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (gameState !== 'playing') return;
+      
+      const game = gameRef.current;
+      const moveSpeed = 8;
+      
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        game.player.x = Math.max(20, game.player.x - moveSpeed);
+      } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        game.player.x = Math.min(340, game.player.x + moveSpeed);
       }
     };
-  }, [gameState, updateGame, draw]);
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [gameState]);
 
   const handleTouchStart = (e) => {
     e.preventDefault();
@@ -562,67 +514,42 @@ const RailsShooter = () => {
     gameRef.current.touchStartX = null;
   };
 
-  const handleKeyDown = (e) => {
-    if (gameState !== 'playing') return;
-    
-    const game = gameRef.current;
-    const moveSpeed = 8;
-    
-    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
-      game.player.x = Math.max(20, game.player.x - moveSpeed);
-    } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
-      game.player.x = Math.min(340, game.player.x + moveSpeed);
-    }
-  };
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [gameState]);
-
   const startGame = () => {
-    gameRef.current = {
-      player: {
-        x: 180,
-        y: 500,
-        width: 40,
-        height: 40,
-        health: 100 * gameRef.current.upgrades.health,
-        maxHealth: 100 * gameRef.current.upgrades.health,
-        damage: 10 * gameRef.current.upgrades.damage,
-        fireRate: 200,
-        lastShot: 0,
-        shield: false,
-        shieldTime: 0,
-        weapons: []
-      },
-      enemies: [],
-      bullets: [],
-      particles: [],
-      powerups: [],
-      enemySpawnTimer: 0,
-      enemySpawnRate: 1500,
-      scrollOffset: 0,
-      touchStartX: null,
-      upgrades: gameRef.current.upgrades
+    const game = gameRef.current;
+    game.player = {
+      x: 180, y: 500, width: 40, height: 40,
+      health: 100 * game.upgrades.health,
+      maxHealth: 100 * game.upgrades.health,
+      damage: 10 * game.upgrades.damage,
+      fireRate: 200, lastShot: 0,
+      shield: false, shieldTime: 0, weapons: []
     };
+    game.enemies = [];
+    game.bullets = [];
+    game.particles = [];
+    game.powerups = [];
+    game.enemySpawnTimer = 0;
+    game.enemySpawnRate = 1500;
+    game.scrollOffset = 0;
+    game.score = 0;
+    game.wave = 1;
+    
     setScore(0);
     setWave(1);
     setGameState('playing');
   };
 
   const upgradeSystem = (type) => {
+    const game = gameRef.current;
     const costs = {
-      damage: 50 * gameRef.current.upgrades.damage,
-      health: 75 * gameRef.current.upgrades.health,
-      fireRate: 60 * gameRef.current.upgrades.fireRate
+      damage: 50 * game.upgrades.damage,
+      health: 75 * game.upgrades.health,
+      fireRate: 60 * game.upgrades.fireRate
     };
 
     if (currency >= costs[type]) {
       setCurrency(c => c - costs[type]);
-      gameRef.current.upgrades[type]++;
+      game.upgrades[type]++;
     }
   };
 
@@ -648,9 +575,10 @@ const RailsShooter = () => {
         {gameState === 'menu' && (
           <div className="absolute inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center rounded-lg">
             <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 mb-4">
-              RAIL STRIKER
+              ⚡ RAIL STRIKER
             </h1>
-            <p className="text-white text-lg mb-8 text-center px-4">On-Rails Arcade Shooter</p>
+            <p className="text-white text-lg mb-2 text-center px-4">Blast through waves</p>
+            <p className="text-gray-400 mb-8">Collect power-ups • Survive!</p>
             <button
               onClick={startGame}
               className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-12 py-4 rounded-full text-2xl font-bold shadow-lg hover:scale-110 transition-transform"
@@ -663,7 +591,7 @@ const RailsShooter = () => {
                 High Score: {highScore}
               </div>
             )}
-            <div className="mt-8 text-cyan-400 flex items-center gap-2">
+            <div className="mt-4 text-cyan-400 flex items-center gap-2">
               <Star size={20} />
               Credits: {currency}
             </div>
@@ -735,7 +663,6 @@ const RailsShooter = () => {
 
       <div className="mt-4 text-center text-gray-400 text-sm">
         <p>Mobile: Drag left/right • Desktop: Arrow Keys or A/D</p>
-        <p>Collect powerups • Destroy enemies • Survive!</p>
       </div>
     </div>
   );
