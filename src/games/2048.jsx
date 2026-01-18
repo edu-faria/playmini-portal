@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Trophy, RotateCcw, Timer, Zap } from 'lucide-react';
 
 const GRID_SIZES = {
@@ -21,6 +21,9 @@ const Game2048 = () => {
   const [time, setTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [moves, setMoves] = useState(0);
+  
+  const touchStartRef = useRef({ x: 0, y: 0 });
+  const gridRef = useRef(null);
 
   const gridSize = GRID_SIZES[difficulty];
 
@@ -125,7 +128,7 @@ const Game2048 = () => {
     return newGrid;
   };
 
-  const move = (direction) => {
+  const move = useCallback((direction) => {
     if (gameOver || won) return;
 
     let currentGrid = grid.map(row => [...row]);
@@ -169,7 +172,7 @@ const Game2048 = () => {
         setIsPlaying(false);
       }
     }
-  };
+  }, [grid, gameOver, won, gridSize]);
 
   const canMove = (currentGrid) => {
     for (let i = 0; i < gridSize; i++) {
@@ -182,6 +185,7 @@ const Game2048 = () => {
     return false;
   };
 
+  // Keyboard controls
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
@@ -192,7 +196,46 @@ const Game2048 = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [grid, gameOver, won]);
+  }, [move]);
+
+  // Touch controls
+  useEffect(() => {
+    const gridElement = gridRef.current;
+    if (!gridElement) return;
+
+    const handleTouchStart = (e) => {
+      const touch = e.touches[0];
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    };
+
+    const handleTouchEnd = (e) => {
+      if (!touchStartRef.current.x || !touchStartRef.current.y) return;
+
+      const touch = e.changedTouches[0];
+      const deltaX = touch.clientX - touchStartRef.current.x;
+      const deltaY = touch.clientY - touchStartRef.current.y;
+      
+      const minSwipeDistance = 30;
+      
+      if (Math.abs(deltaX) > minSwipeDistance || Math.abs(deltaY) > minSwipeDistance) {
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          move(deltaX > 0 ? 'right' : 'left');
+        } else {
+          move(deltaY > 0 ? 'down' : 'up');
+        }
+      }
+
+      touchStartRef.current = { x: 0, y: 0 };
+    };
+
+    gridElement.addEventListener('touchstart', handleTouchStart, { passive: true });
+    gridElement.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      gridElement.removeEventListener('touchstart', handleTouchStart);
+      gridElement.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [move]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -202,40 +245,59 @@ const Game2048 = () => {
 
   const getTileColor = (value) => {
     const colors = [
-      'bg-gray-200',
-      'bg-pink-200',
-      'bg-pink-300',
-      'bg-orange-300',
-      'bg-yellow-300',
-      'bg-lime-300',
-      'bg-green-400',
-      'bg-emerald-500',
-      'bg-teal-500',
-      'bg-cyan-500',
-      'bg-blue-500',
-      'bg-indigo-500',
-      'bg-purple-500',
-      'bg-fuchsia-500',
-      'bg-pink-500',
-      'bg-rose-500',
-      'bg-red-600',
-      'bg-amber-600'
+      'bg-gray-200 text-gray-800',
+      'bg-pink-200 text-gray-800',
+      'bg-pink-300 text-gray-800',
+      'bg-orange-300 text-gray-800',
+      'bg-yellow-300 text-gray-800',
+      'bg-lime-300 text-gray-800',
+      'bg-green-400 text-white',
+      'bg-emerald-500 text-white',
+      'bg-teal-500 text-white',
+      'bg-cyan-500 text-white',
+      'bg-blue-500 text-white',
+      'bg-indigo-500 text-white',
+      'bg-purple-500 text-white',
+      'bg-fuchsia-500 text-white',
+      'bg-pink-500 text-white',
+      'bg-rose-500 text-white',
+      'bg-red-600 text-white',
+      'bg-amber-600 text-white'
     ];
-    return colors[value] || 'bg-gradient-to-br from-purple-600 to-pink-600';
+    return colors[value] || 'bg-gradient-to-br from-purple-600 to-pink-600 text-white';
   };
 
+  // Calculate responsive tile sizes
+  const getTileSize = () => {
+    if (typeof window === 'undefined') return { width: 80, height: 80, fontSize: 24 };
+    
+    const isMobile = window.innerWidth < 768;
+    
+    if (isMobile) {
+      if (gridSize === 3) return { width: 70, height: 70, fontSize: 24 };
+      if (gridSize === 4) return { width: 60, height: 60, fontSize: 20 };
+      return { width: 50, height: 50, fontSize: 16 };
+    } else {
+      if (gridSize === 3) return { width: 90, height: 90, fontSize: 28 };
+      if (gridSize === 4) return { width: 80, height: 80, fontSize: 24 };
+      return { width: 65, height: 65, fontSize: 20 };
+    }
+  };
+
+  const tileSize = getTileSize();
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 p-4 flex items-center justify-center">
-      <div className="max-w-2xl w-full">
-        <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8">
-          <div className="text-center mb-6">
-            <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
+    <div className="w-full p-2 sm:p-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-8">
+          <div className="text-center mb-4 sm:mb-6">
+            <h1 className="text-3xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
               2048 🎮
             </h1>
-            <p className="text-gray-600 mb-2">Merge tiles to reach 2048!</p>
+            <p className="text-gray-600 text-sm sm:text-base">Merge tiles to reach 2048!</p>
           </div>
 
-          <div className="mb-6 flex justify-center gap-2">
+          <div className="mb-4 sm:mb-6 flex justify-center gap-2">
             {['easy', 'medium', 'hard'].map(level => (
               <button
                 key={level}
@@ -243,7 +305,7 @@ const Game2048 = () => {
                   setDifficulty(level);
                   setTimeout(() => initializeGrid(), 0);
                 }}
-                className={`px-6 py-2 rounded-full font-bold transition-all transform hover:scale-105 ${
+                className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-full text-sm sm:text-base font-bold transition-all transform hover:scale-105 active:scale-95 ${
                   difficulty === level
                     ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -254,52 +316,53 @@ const Game2048 = () => {
             ))}
           </div>
 
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white">
-              <div className="flex items-center gap-2 mb-1">
-                <Zap size={18} />
-                <div className="text-xs font-semibold opacity-90">SCORE</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl sm:rounded-2xl p-2 sm:p-4 text-white">
+              <div className="flex items-center gap-1 sm:gap-2 mb-1">
+                <Zap size={14} className="sm:w-[18px] sm:h-[18px]" />
+                <div className="text-[10px] sm:text-xs font-semibold opacity-90">SCORE</div>
               </div>
-              <div className="text-2xl font-black">{score}</div>
+              <div className="text-lg sm:text-2xl font-black">{score}</div>
             </div>
-            <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 text-white">
-              <div className="flex items-center gap-2 mb-1">
-                <Trophy size={18} />
-                <div className="text-xs font-semibold opacity-90">BEST</div>
+            <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl sm:rounded-2xl p-2 sm:p-4 text-white">
+              <div className="flex items-center gap-1 sm:gap-2 mb-1">
+                <Trophy size={14} className="sm:w-[18px] sm:h-[18px]" />
+                <div className="text-[10px] sm:text-xs font-semibold opacity-90">BEST</div>
               </div>
-              <div className="text-2xl font-black">{bestScore}</div>
+              <div className="text-lg sm:text-2xl font-black">{bestScore}</div>
             </div>
-            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-4 text-white">
-              <div className="flex items-center gap-2 mb-1">
-                <Timer size={18} />
-                <div className="text-xs font-semibold opacity-90">TIME</div>
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl sm:rounded-2xl p-2 sm:p-4 text-white">
+              <div className="flex items-center gap-1 sm:gap-2 mb-1">
+                <Timer size={14} className="sm:w-[18px] sm:h-[18px]" />
+                <div className="text-[10px] sm:text-xs font-semibold opacity-90">TIME</div>
               </div>
-              <div className="text-2xl font-black">{formatTime(time)}</div>
+              <div className="text-lg sm:text-2xl font-black">{formatTime(time)}</div>
             </div>
-            <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl p-4 text-white">
-              <div className="text-xs font-semibold opacity-90 mb-1">MOVES</div>
-              <div className="text-2xl font-black">{moves}</div>
+            <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl sm:rounded-2xl p-2 sm:p-4 text-white">
+              <div className="text-[10px] sm:text-xs font-semibold opacity-90 mb-1">MOVES</div>
+              <div className="text-lg sm:text-2xl font-black">{moves}</div>
             </div>
           </div>
 
           <div 
-            className="bg-gradient-to-br from-purple-400/30 to-pink-400/30 rounded-2xl p-4 mb-6 mx-auto"
+            ref={gridRef}
+            className="bg-gradient-to-br from-purple-400/30 to-pink-400/30 rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 mx-auto touch-none"
             style={{ 
               width: 'fit-content',
               display: 'grid',
               gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
-              gap: '12px'
+              gap: '8px'
             }}
           >
             {grid.map((row, i) =>
               row.map((cell, j) => (
                 <div
                   key={`${i}-${j}`}
-                  className={`${getTileColor(cell)} rounded-xl flex items-center justify-center font-black text-white shadow-lg transition-all duration-200 transform hover:scale-105`}
+                  className={`${getTileColor(cell)} rounded-lg sm:rounded-xl flex items-center justify-center font-black shadow-lg transition-all duration-150`}
                   style={{
-                    width: gridSize === 3 ? '90px' : gridSize === 4 ? '80px' : '65px',
-                    height: gridSize === 3 ? '90px' : gridSize === 4 ? '80px' : '65px',
-                    fontSize: gridSize === 3 ? '28px' : gridSize === 4 ? '24px' : '20px'
+                    width: `${tileSize.width}px`,
+                    height: `${tileSize.height}px`,
+                    fontSize: `${tileSize.fontSize}px`
                   }}
                 >
                   {getDisplayValue(cell)}
@@ -308,45 +371,45 @@ const Game2048 = () => {
             )}
           </div>
 
-          <div className="flex gap-3 justify-center mb-4">
+          <div className="flex gap-2 sm:gap-3 justify-center mb-3 sm:mb-4">
             <button
               onClick={initializeGrid}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 shadow-lg transition-all transform hover:scale-105"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 sm:px-8 py-2 sm:py-3 rounded-full text-sm sm:text-base font-bold flex items-center gap-2 shadow-lg transition-all transform hover:scale-105 active:scale-95"
             >
-              <RotateCcw size={20} />
+              <RotateCcw size={16} className="sm:w-5 sm:h-5" />
               New Game
             </button>
           </div>
 
-          <div className="text-center text-gray-600 text-sm">
-            Use arrow keys or swipe to play
+          <div className="text-center text-gray-600 text-xs sm:text-sm">
+            <span className="hidden sm:inline">Use arrow keys or </span>Swipe to play
           </div>
 
           {(gameOver || won) && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="bg-white rounded-3xl p-8 max-w-md mx-4 text-center shadow-2xl transform scale-100 animate-bounce-in">
-                <div className="text-6xl mb-4">{won ? '🎉' : '😢'}</div>
-                <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 max-w-md w-full mx-4 text-center shadow-2xl">
+                <div className="text-5xl sm:text-6xl mb-4">{won ? '🎉' : '😢'}</div>
+                <h2 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
                   {won ? 'You Won!' : 'Game Over!'}
                 </h2>
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-600 text-sm sm:text-base mb-4">
                   {won ? 'Congratulations! You reached 2048!' : 'No more moves available!'}
                 </p>
-                <div className="bg-gray-100 rounded-2xl p-4 mb-6">
+                <div className="bg-gray-100 rounded-xl sm:rounded-2xl p-4 mb-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="text-2xl font-black text-purple-600">{score}</div>
+                      <div className="text-xl sm:text-2xl font-black text-purple-600">{score}</div>
                       <div className="text-xs text-gray-600">Final Score</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-black text-pink-600">{formatTime(time)}</div>
+                      <div className="text-xl sm:text-2xl font-black text-pink-600">{formatTime(time)}</div>
                       <div className="text-xs text-gray-600">Time</div>
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={initializeGrid}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 rounded-full font-bold shadow-lg transition-all transform hover:scale-105"
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-bold shadow-lg transition-all transform hover:scale-105 active:scale-95"
                 >
                   Play Again
                 </button>
