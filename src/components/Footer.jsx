@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 function Footer() {
   return (
@@ -6,9 +7,9 @@ function Footer() {
       <div className="max-w-7xl mx-auto px-4 text-center text-gray-400">
         <p>&copy; 2024 PlayMini.io - Free Online Mini Games</p>
         <p className="text-sm mt-2">
-          <a href="#privacy" className="hover:text-yellow-400 transition">Privacy Policy</a>
+          <Link to="/privacy" className="hover:text-yellow-400 transition">Privacy Policy</Link>
           {' · '}
-          <a href="#terms" className="hover:text-yellow-400 transition">Terms of Service</a>
+          <Link to="/terms" className="hover:text-yellow-400 transition">Terms of Service</Link>
         </p>
       </div>
     </footer>

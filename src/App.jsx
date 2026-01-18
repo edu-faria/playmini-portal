@@ -5,6 +5,8 @@ import Footer from './components/Footer';
 import AdSpace from './components/AdSpace';
 import HomePage from './pages/HomePage';
 import GamePage from './pages/GamePage';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 import AdSenseConsent from './components/AdSenseConsent'
 
 function App() {
@@ -19,6 +21,8 @@ function App() {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
             <Route path="/:gameId" element={<GamePage />} />
           </Routes>
         </main>
