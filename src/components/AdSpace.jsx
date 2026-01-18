@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-function AdSpace({ type = 'leaderboard', position = 'top', slot = 'auto' }) {
+function AdSpace({ type = 'leaderboard', position = 'top' }) {
   const adRef = useRef(null);
   const isAdPushed = useRef(false);
 
@@ -21,13 +21,32 @@ function AdSpace({ type = 'leaderboard', position = 'top', slot = 'auto' }) {
     };
   }, []);
 
-  const sizes = {
-    leaderboard: { width: 728, height: 90, format: 'horizontal' },
-    rectangle: { width: 300, height: 250, format: 'rectangle' },
-    skyscraper: { width: 300, height: 600, format: 'vertical' }
+  const adConfig = {
+    leaderboard: { 
+      width: '728px', 
+      height: '90px',
+      slot: '1234567890', // Replace with your actual ad slot ID
+      format: 'horizontal',
+      responsive: true
+    },
+    rectangle: { 
+      width: '300px', 
+      height: '250px',
+      slot: '0987654321', // Replace with your actual ad slot ID
+      format: 'rectangle',
+      responsive: true
+    },
+    skyscraper: { 
+      width: '300px', 
+      height: '600px',
+      slot: '1122334455', // Replace with your actual ad slot ID
+      format: 'vertical',
+      responsive: true
+    }
   };
 
-  const adSize = sizes[type] || sizes.leaderboard;
+  const config = adConfig[type] || adConfig.leaderboard;
+  const clientId = import.meta.env.VITE_ADSENSE_CLIENT_ID || 'ca-pub-6725938675870604';
 
   return (
     <div className="bg-gray-800 bg-opacity-50 py-4 text-center border-b border-white border-opacity-10">
@@ -36,12 +55,16 @@ function AdSpace({ type = 'leaderboard', position = 'top', slot = 'auto' }) {
           <ins 
             ref={adRef}
             className="adsbygoogle"
-            style={{ display: 'inline-block', width: `${adSize.width}px`, height: `${adSize.height}px` }}
-            data-ad-client="ca-pub-6725938675870604"
-            data-ad-slot={slot}
-            data-ad-format={adSize.format}
-            data-full-width-responsive="true"
-          ></ins>
+            style={{ 
+              display: 'inline-block', 
+              width: config.width, 
+              height: config.height 
+            }}
+            data-ad-client={clientId}
+            data-ad-slot={config.slot}
+            data-ad-format={config.format}
+            data-full-width-responsive={config.responsive.toString()}
+          />
         </div>
       </div>
     </div>

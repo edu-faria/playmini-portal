@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { games } from '../data/gamesData';
 import AdSpace from '../components/AdSpace';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 // Import your game components
 import Game2048 from '../games/2048';
@@ -13,7 +14,6 @@ import RailStriker from '../games/Rail-striker';
 import Snake from '../games/Snake';
 import Sudoku from '../games/Sudoku';
 import Tetris from '../games/Tetris';
-
 
 // Map game IDs to components - use the EXACT id from gamesData.js
 const gameComponents = {
@@ -65,14 +65,19 @@ function GamePage() {
             </div>
 
             <div className="bg-gray-900 rounded-lg min-h-[400px]">
-              {GameComponent ? <GameComponent /> : (
-                <div className="flex items-center justify-center h-[400px] text-center text-gray-400">
-                  <div>
-                    <div className="text-8xl mb-4">{game.icon}</div>
-                    <p className="text-xl">Game coming soon!</p>
+              {/* Wrap the game component with ErrorBoundary */}
+              <ErrorBoundary>
+                {GameComponent ? (
+                  <GameComponent />
+                ) : (
+                  <div className="flex items-center justify-center h-[400px] text-center text-gray-400">
+                    <div>
+                      <div className="text-8xl mb-4">{game.icon}</div>
+                      <p className="text-xl">Game coming soon!</p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ErrorBoundary>
             </div>
 
             <div className="mt-6 bg-black bg-opacity-30 rounded-lg p-4">
